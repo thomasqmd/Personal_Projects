@@ -1,0 +1,10 @@
+---
+title: "Julia?"
+format: html
+---
+
+# Testing julia code blocks
+
+```{julia}
+
+```
