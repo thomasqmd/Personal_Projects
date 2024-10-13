@@ -191,6 +191,20 @@ aRt::split_grid()
 #   geom_polygon(aes(x = x, y = y, group = side), color = "red") + 
 #   facet_grid(rows = vars(row), cols = vars(col)) + 
 #   theme_minimal()
+```
 
+```{r profile-pic}
+#| warning: false
+#| fig-asp: 1
+n = 1001
+
+expand.grid(x = seq(-1, 1, length.out = n),
+            y = seq(-1, 1, length.out = n)) |>
+  tibble(fill = rbeta(n^2, abs(x), abs(y))) |>
+  replace_na(list(fill = 0)) |>
+  ggplot() +
+  geom_raster(aes(x = x, y = y, fill = factor(fill)), show.legend = FALSE, interpolate = FALSE) +
+  scale_fill_viridis_d(option = "turbo") + 
+  theme_void()
 
 ```
