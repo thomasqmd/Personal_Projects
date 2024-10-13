@@ -1,0 +1,185 @@
+---
+title: "Diamond Analysis"
+author: "Thomas Reinke"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "#", 
+  cache = FALSE,  
+  collapse = TRUE,
+  error = TRUE,
+  tidy.opts=list(width.cutoff=65),
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+library(viridis)
+library(scales)
+library(tidyverse)
+library(esc)
+library(plotrix)
+library(gridExtra)
+theme_set(theme_minimal())
+theme_update(panel.grid.minor = element_blank())
+theme_update(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+## MPG Analysis
+
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+```
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = class)) + 
+   scale_color_manual(values = turbo(8))
+
+```
+
+```{r}
+p1 <- ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, alpha = class))
+
+p2 <- ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, shape = class))
+
+grid.arrange(p1, p2, ncol = 1)
+
+
+```
+
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+
+```
+
+```{r}
+a1 <- ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ cyl)
+a2 <- ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(. ~ cyl)
+
+grid.arrange(a1, a2, ncol = 1)
+
+```
+
+```{r}
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy, linetype = drv, color = drv)) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = drv)) + 
+  scale_color_manual(values = plasma(3))
+
+```
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) + 
+  geom_point() + 
+  geom_smooth() + 
+  scale_color_manual(values = plasma(3))
+
+```
+```{r}
+ggplot(data = diamonds) + 
+  stat_summary(
+    mapping = aes(x = cut, y = depth),
+    fun.min = min,
+    fun.max = max,
+    fun = median
+  )
+
+```
+
+```{r}
+a1 <- ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, colour = cut))
+a2 <- ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = cut))
+
+grid.arrange(a1, a2, ncol = 1)
+```
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity))
+
+```
+
+```{r}
+b1 <- ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity)) + 
+  geom_bar(alpha = 1/5, position = "identity")
+b2 <- ggplot(data = diamonds, mapping = aes(x = cut, colour = clarity)) + 
+  geom_bar(fill = NA, position = "identity")
+
+grid.arrange(b1, b2, ncol = 2)
+
+```
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "fill")
+
+```
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "dodge")
+
+```
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = trans),position = "jitter") + scale_color_manual(values = turbo(10))
+
+```
+
+```{r}
+c1 <- ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot()
+c2 <- ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot() +
+  coord_flip()
+grid.arrange(c1, c2, ncol = 1)
+
+```
+
+```{r}
+nz <- map_data("nz")
+
+ggplot(nz, aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black")
+
+ggplot(nz, aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black") +
+  coord_quickmap()
+
+```
+
+```{r}
+bar <- ggplot(data = diamonds) + 
+  geom_bar(
+    mapping = aes(x = cut, fill = cut), 
+    show.legend = FALSE,
+    width = 1
+  ) + 
+  theme(aspect.ratio = 1) +
+  labs(x = NULL, y = NULL)
+
+b1 <- bar + coord_flip()
+b2 <- bar + coord_polar()
+
+grid.arrange(b1, b2, ncol = 2)
+
+```
