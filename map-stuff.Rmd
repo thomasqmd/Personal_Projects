@@ -1,0 +1,27 @@
+---
+title: "Map Stuff"
+author:
+  - name: Thomas Reinke
+date: "`r Sys.Date()`"
+output: 
+#   prettydoc::html_pretty:
+#     theme: architect
+#     highlight: github
+#     toc: yes
+# editor_options: 
+#   chunk_output_type: console
+  html_document:
+    theme: sandstone
+    highlight: tango
+    toc: true
+    numbered_sections: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(mapgl)
+```
+
+# Learning
