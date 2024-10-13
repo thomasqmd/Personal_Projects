@@ -3,7 +3,7 @@ process_file <- \(file, type = ".Rmd") {
   knitr::purl(paste0(file, type))
   # .Rmd -> .pdf & .tex
   rmarkdown::render(paste0(file, type))
-  
+  # zip files together
   zip(zipfile = file,
       files = c(
         paste0(file, "_files"),
@@ -20,6 +20,7 @@ process_files <- \(files, type = ".Rmd") {
   }
 }
 
-lis <- c("Report-1_1", "Report-1_2", "Report-1_3", "Report-1_4")
+# Test a list of files
 
-process_files(lis)
+# lis <- c("Report-1_1", "Report-1_2", "Report-1_3", "Report-1_4")
+# process_files(lis)
