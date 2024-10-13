@@ -1,0 +1,358 @@
+---
+title: "TidyModel Practice"
+author:
+  - name: Thomas Reinke
+date: "`r Sys.Date()`"
+output: 
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+    toc: yes
+    toc_depth: 4
+    df_print: kable
+editor_options:
+  chunk_output_type: console
+  # html_document:
+  #   theme: sandstone
+  #   highlight: tango
+  #   toc: true
+  #   numbered_sections: true
+  #   toc_float: true
+  #   toc_depth: 4
+  #   df_print: kable
+  #   df_print: paged
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidymodels)
+library(broom.mixed)
+library(dotwhisker)
+library(rstanarm)
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, class.output="bg-warning")
+```
+
+# Intro to Tidymodels
+
+## Frequentist
+
+### Sea Urchin Data
+
+```{r}
+#| message: false
+
+url <- "https://tidymodels.org/start/models/urchins.csv"
+urchins <-
+  read_csv(url) %>% 
+  # Change the names to be a little more verbose
+  setNames(c("food_regime", "initial_volume", "width")) %>% 
+  # Factors are very helpful for modeling
+  # so we convert one column
+  mutate(
+    food_regime = factor(
+      food_regime,
+      levels = c("Initial", "Low", "High")
+    )
+  )
+```
+
+### Scatterplot by Regime
+
+```{r}
+#| message: false
+ggplot(urchins,
+       aes(x = initial_volume, 
+           y = width, 
+           group = food_regime, 
+           col = food_regime)) + 
+  geom_point() + 
+  geom_smooth(method = lm, se = FALSE) +
+  scale_color_viridis_d(option = "plasma", end = .7)
+```
+
+### Build and Fit a Model
+
+```{r}
+#| message: false
+# linear_reg() |> 
+#   set_engine("keras")
+lm_mod <- linear_reg()
+
+lm_fit <- 
+  lm_mod %>% 
+  fit(width ~ initial_volume * food_regime, data = urchins)
+#lm_fit
+```
+
+### View Fit
+
+```{r}
+tidy(lm_fit)
+```
+
+### Dot & Whisker Plot
+
+```{r}
+tidy(lm_fit) %>% 
+  dwplot(dot_args = list(size = 2, color = "black"),
+         whisker_args = list(color = "black"),
+         vline = geom_vline(xintercept = 0, colour = "grey50", linetype = 2))
+```
+
+### Prediction
+
+#### Prediction Points
+
+```{r}
+new_points <- expand.grid(initial_volume = 20, 
+                          food_regime = c("Initial", "Low", "High"))
+new_points
+```
+
+#### Mean Prediction
+
+```{r}
+mean_pred <- predict(lm_fit, new_data = new_points)
+mean_pred
+```
+
+#### Confidence Interval
+
+```{r}
+conf_int_pred <- predict(lm_fit, 
+                         new_data = new_points, 
+                         type = "conf_int")
+conf_int_pred
+```
+
+#### Plot Intervals
+
+```{r}
+# Now combine: 
+plot_data <- 
+  new_points %>% 
+  bind_cols(mean_pred) %>% 
+  bind_cols(conf_int_pred)
+
+# and plot:
+ggplot(plot_data, aes(x = food_regime)) + 
+  geom_point(aes(y = .pred)) + 
+  geom_errorbar(aes(ymin = .pred_lower, 
+                    ymax = .pred_upper),
+                width = .2) + 
+  labs(y = "urchin size")
+```
+
+## Bayes
+
+### Build Model
+
+```{r}
+#| cache: true
+# set the prior distribution
+options(mc.cores = parallel::detectCores())
+prior_dist <- rstanarm::student_t(df = 1)
+
+set.seed(123)
+
+# make the parsnip model
+bayes_mod <-   
+  linear_reg() %>% 
+  set_engine("stan", 
+             prior_intercept = prior_dist, 
+             prior = prior_dist) 
+
+# train the model
+bayes_fit <- 
+  bayes_mod %>% 
+  fit(width ~ initial_volume * food_regime, data = urchins)
+
+print(bayes_fit, digits = 5)
+```
+
+### Confidence Intervals
+
+```{r}
+tidy(bayes_fit, conf.int = TRUE)
+```
+
+### Plot Error Bars
+
+```{r}
+bayes_plot_data <- 
+  new_points %>% 
+  bind_cols(predict(bayes_fit, new_data = new_points)) %>% 
+  bind_cols(predict(bayes_fit, new_data = new_points, type = "conf_int"))
+
+ggplot(bayes_plot_data, aes(x = food_regime)) + 
+  geom_point(aes(y = .pred)) + 
+  geom_errorbar(aes(ymin = .pred_lower, ymax = .pred_upper), width = .2) + 
+  labs(y = "urchin size") + 
+  ggtitle("Bayesian model with t(1) prior distribution")
+```
+
+# Preprocessing
+
+## Introduction
+
+```{r}
+library(nycflights13)
+library(skimr)
+library(timeDate)
+```
+
+## The New York City Flight Data
+
+Goal: predict whether or not a plane arrives 30+ minutes late.
+
+```{r}
+set.seed(123)
+
+flight_data <-
+  flights |>
+  mutate(
+    arr_delay = ifelse(arr_delay >= 30, "late", "on_time"),
+    arr_delay = factor(arr_delay),
+    date = as_date(time_hour)
+  ) |>
+  inner_join(weather, by = c("origin", "time_hour")) |>
+  select(dep_time, flight, origin, dest, air_time,
+         distance, carrier, date, arr_delay, time_hour) |>
+  na.omit() |>
+  mutate_if(is.character, as.factor)
+```
+
+```{r}
+flight_data |> 
+  count(arr_delay) |>
+  mutate(prop = n/sum(n))
+```
+
+```{r}
+#| eval: false
+glimpse(flight_data)
+```
+
+```{r}
+flight_data |> skim(dest, carrier)
+```
+
+## Data Splitting
+
+```{r}
+set.seed(222)
+
+data_split <- initial_split(flight_data, prop = 3/4)
+
+train_data <- training(data_split)
+test_data <- testing(data_split)
+```
+
+## Create Recipe and Roles
+
+```{r}
+flights_rec <-
+  recipe(arr_delay ~ ., data = train_data) |>
+  update_role(flight, time_hour, new_role = "ID")
+```
+
+```{r}
+#| eval: false
+summary(flights_rec)
+```
+
+## Create Features
+
+```{r}
+#| eval: false
+flight_data |>
+  distinct(date) |> 
+  mutate(numeric_date = as.numeric(date))
+```
+
+```{r}
+flights_rec <-
+  flights_rec |> 
+  step_date(date, features = c("dow", "month")) |>
+  step_holiday(date,
+               holidays = listHolidays("US"),
+               keep_original_cols = FALSE) |>
+  step_dummy(all_nominal_predictors())
+```
+
+```{r}
+test_data |>
+  distinct(dest) |>
+  anti_join(train_data)
+```
+
+```{r}
+flights_rec <-
+  flights_rec |>
+  step_zv(all_predictors())
+```
+
+## Fit a Model with a Recipe
+
+```{r}
+lr_mod <-
+  logistic_reg() |>
+  set_engine("glm")
+```
+
+1. Process recipe using training set
+2. Apply recipe to training set
+3. Apply recipe to test set
+
+```{r}
+flights_wflow <-
+  workflow() |>
+  add_model(lr_mod) |>
+  add_recipe(flights_rec)
+
+flights_wflow
+```
+
+```{r}
+flights_fit <-
+  flights_wflow |>
+  fit(data = train_data)
+```
+
+```{r}
+#| cache: true
+flights_fit |>
+  extract_fit_parsnip() |>
+  tidy()
+```
+
+## Use a Trained Workflow to Predict
+
+```{r}
+#| eval: false
+predict(flights_fit, test_data)
+```
+
+```{r}
+flights_aug <-
+  augment(flights_fit, test_data)
+```
+
+```{r}
+#| eval: false
+flights_aug |>
+  select(arr_delay, time_hour, flight, .pred_class, .pred_on_time)
+```
+
+```{r}
+flights_aug |>
+  roc_curve(truth = arr_delay, .pred_late) |>
+  autoplot()
+```
+
+```{r}
+flights_aug |>
+  roc_auc(truth = arr_delay, .pred_late)
+```
