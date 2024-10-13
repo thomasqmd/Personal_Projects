@@ -1,0 +1,65 @@
+---
+title: "Data Viz Practice"
+author: "Thomas Reinke"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "#", 
+  cache = FALSE,  
+  collapse = TRUE,
+  error = TRUE,
+  tidy.opts=list(width.cutoff=65),
+  echo = TRUE
+)
+library(viridis)
+library(scales)
+library(tidyverse)
+library(esc)
+library(plotrix)
+```
+
+```{r}
+s <- sunspots
+
+str(sunspots)
+#ts.plot(sunspots)
+
+s <- tibble(s)
+
+p <- ggplot(s)
+```
+
+```{r}
+colors <- turbo(235)
+monthly <- matrix(s$s, nrow = 235, byrow = TRUE)
+
+plot(1:12, 1:12, ylim = c(min(s), max(s)), 
+     xlim = c(1, 12), type = "n", 
+     ylab = "Sunspots", xlab = "Month of Year")
+for(i in 1:235){
+  lines(1:12, monthly[i, ], lwd = 1.5, lty = 1, col = alpha(colors[i], .25))
+}
+title("Sunpots per month")
+
+```
+
+```{r}
+df <- c(mtcars["mpg"],mtcars["hp"], mtcars["cyl"])
+t <- tibble(m = df$mpg, h = df$hp, c = factor(df$cyl))
+
+ggplot(data = t, aes(x = m, y =h)) + geom_point(alpha = .9, aes(color = c))
+```
+
+```{r}
+ggplot(data = t, aes(x = c, y = m)) + geom_boxplot() + geom_jitter(alpha = .9, aes(color = c))
+```
+
+```{r}
+ggplot(data  = t, aes(y = m)) + geom_boxplot() + facet_wrap(facets = vars(c)) 
+```
+
