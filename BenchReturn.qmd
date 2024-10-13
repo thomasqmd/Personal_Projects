@@ -1,0 +1,124 @@
+---
+title: "BenchReturn"
+author: "ThomasReinke"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup}
+#| echo: false
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#"
+)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
+
+#source(here::here("helpers.R"))
+library("tidyverse"); library("patchwork"); library("glue")
+library("scales", warn.conflicts = FALSE); library("extrafont")
+theme_set(theme_minimal())
+theme_update(panel.grid.minor = element_blank())
+```
+
+## To return or not to return
+
+
+### A function that simply returns true
+```{r}
+no_return <- function(n){
+  TRUE
+}
+```
+```{r}
+yes_return <- function(n){
+  return(TRUE)
+}
+```
+
+```{r}
+#| cache: true
+# benchmark and plot results
+res <- bench::press(
+  n = c(1, 2),
+  {
+    bench::mark(
+      yes_return(n),
+      no_return(n)
+    )
+  }
+)
+res
+plot(res)
+```
+
+### A function that copies and returns a matrix
+```{r}
+matrix_return <- function(A){
+  B <- A
+  return(B) 
+}
+```
+```{r}
+matrix_no_return <- function(A){
+  B <- A
+  B
+}
+```
+```{r}
+#| cache: true
+# benchmark and plot results
+res <- bench::press(
+  m = c(10, 20, 50, 100),
+  {
+    A <- matrix(rnorm(m^2), m) |> crossprod()
+    bench::mark(
+      matrix_no_return(A),
+      matrix_return(A)
+    )
+  }
+)
+res
+plot(res)
+```
+
+### Loops
+```{r}
+loop_return <- function(n){
+  for(i in seq_along(1:n)){
+    for(j in seq_along(1:n)){
+      for(k in seq_along(1:n)){
+        l <- i * j * k
+      }
+    }
+  }
+  return(l)
+}
+```
+```{r}
+loop_no_return <- function(n){
+  for(i in seq_along(1:n)){
+    for(j in seq_along(1:n)){
+      for(k in seq_along(1:n)){
+        l <- i * j * k
+      }
+    }
+  }
+  l
+}
+```
+```{r}
+#| cache: true
+res <- bench::press(
+  n = c(1, 10),
+  {
+    bench::mark(
+      matrix_no_return(n),
+      matrix_return(n)
+    )
+  }
+)
+res
+plot(res)
+```
+
