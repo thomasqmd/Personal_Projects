@@ -1,0 +1,190 @@
+---
+title: "Hedges G Analysis"
+format: pdf
+editor: visual
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "#", 
+  cache = FALSE,  
+  collapse = TRUE,
+  error = TRUE,
+  tidy.opts=list(width.cutoff=65),
+  echo = TRUE
+)
+library(viridis)
+library(scales)
+library(tidyverse)
+library(dplyr)
+library(esc)
+library(plotrix)
+```
+
+Hedges G
+
+$g = \frac{M_1 - M_2}{SD^*_{\text{pooled}}}$
+
+Standard Error
+
+$\sigma_\overline{x} \approx \frac{\sigma_x}{\sqrt n}$
+
+```{r}
+experiment <- function(n){
+
+  # n rolls of dice
+  # g1 treatment group
+  # g2 control group
+  # return named list of hedges g and standard error
+  
+#g1 <- runif(n, 1, 6)
+#g2 <- runif(n, 1, 6)
+
+# I hope for big numbers!
+g1 <- sample(1:6, n, replace = TRUE)
+g2 <- sample(1:6, n, replace = TRUE)
+
+# Calculate mean of each group
+g1m <- mean(g1)
+g2m <- mean(g2)
+
+# difference of means
+diff <- g1m - g2m
+
+# concatenate g1, g2
+comb <- c(g1, g2)
+
+# pooled standard deviation
+std_dev <- sd(comb)
+
+# standard error
+se <- std_dev / sqrt(n)
+
+# hedges g
+g = diff / std_dev
+
+return(list(g = g, se = se))
+}
+
+```
+
+```{r}
+experiment2 <- function(n){
+
+  # n rolls of dice
+  # g1 treatment group
+  # g2 control group
+  # return named list of hedges g and standard error
+  
+# g1 <- runif(n, 1, 6)
+# g2 <- runif(n, 1, 6)
+
+# I hope for big numbers!
+g1 <- sample(1:6, n, replace = TRUE)
+g2 <- sample(1:6, n, replace = TRUE)
+
+# Calculate mean of each group
+g1m <- mean(g1)
+g2m <- mean(g2)
+s1 <- sd(g1)
+s2 <- sd(g2)
+
+# difference of means
+diff <- g1m - g2m
+
+# concatenate g1, g2
+comb <- c(g1, g2)
+
+# pooled standard deviation
+#std_dev <- sd(comb)
+pooled <- sqrt(((n-1)*s1^2 + (n-1)*s2^2) / (n+n-2))
+
+
+# standard error
+se <- pooled / sqrt(n)
+
+# hedges g
+g = diff / pooled
+
+return(list(g = g, se = se))
+}
+```
+
+```{r, echo=FALSE, cache=TRUE}
+# number of times to run experiment
+ex <- 1000
+# number of rolls in each experiment
+n <- 10
+
+# tibble to store data
+data <- tibble(
+  g = numeric(),
+  se = numeric()
+)
+
+# run experiment ex times
+for(i in 1:ex){
+  sim <- experiment(n)
+  data <- data %>% add_row(g = sim[["g"]], se = sim[["se"]])
+}
+```
+
+```{r, cache=TRUE}
+# ylim = c(min(data$se),max(data$se))
+# xlim = c(min(data$g),max(data$g))
+plot(data$g, data$se, xlim = c(min(data$g),max(data$g)) , ylim = c(min(data$se),max(data$se)), pch = 19, col = alpha("black", .25))
+```
+
+plot g by SE
+
+```{r}
+experiment3 <- function(n){
+
+  # n rolls of dice
+  # g1 treatment group
+  # g2 control group
+  # return named list of hedges g and standard error
+  
+#g1 <- runif(n, 1, 6)
+#g2 <- runif(n, 1, 6)
+
+# I hope for big numbers!
+g1 <- sample(1:6, n, replace = TRUE)
+g2 <- sample(1:6, n, replace = TRUE)
+
+df <- esc_mean_se(grp1m = mean(g1),   # mean of group 1
+            grp1se = std.error(g1, na.rm = TRUE),  # standard error of group 1
+            grp1n = n,    # sample in group 1
+            grp2m = mean(g2),    # mean of group 2
+            grp2se = std.error(g2, na.rm = TRUE),  # standard error of group 2
+            grp2n = n,    # sample in group 2
+            es.type = "g") # convert to SMD; use "g" for Hedges' g
+
+return(list(g = df[[1]], se = df[[2]]))
+}
+```
+
+```{r, echo=FALSE, cache=TRUE}
+# number of times to run experiment
+ex <- 500
+# number of rolls in each experiment
+n <- 20
+
+# tibble to store data
+data <- tibble(
+  g = numeric(),
+  se = numeric()
+)
+
+# run experiment ex times
+for(i in 1:ex){
+  sim <- experiment3(n)
+  data <- data %>% add_row(g = sim[["g"]], se = sim[["se"]])
+}
+```
+
+```{r}
+# ylim = c(min(data$se),max(data$se))
+# xlim = c(min(data$g),max(data$g))
+plot(data$g, data$se, xlim = c(min(data$g),max(data$g)) , ylim = c(min(data$se),max(data$se)), pch = 19, col = alpha("black", .25))
+```
