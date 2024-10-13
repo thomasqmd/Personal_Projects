@@ -1,0 +1,135 @@
+---
+title: "Diamond Analysis"
+author: "Thomas Reinke"
+format: pdf
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "#", 
+  cache = FALSE,  
+  collapse = TRUE,
+  error = TRUE,
+  tidy.opts=list(width.cutoff=65),
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+library(viridis)
+library(scales)
+library(tidyverse)
+library(esc)
+library(plotrix)
+library(gridExtra)
+theme_set(theme_minimal())
+theme_update(panel.grid.minor = element_blank())
+theme_update(plot.title = element_text(hjust = 0.5))
+
+```
+
+### 1 Var stats
+
+```{r}
+#| cache: true
+#| echo: false
+# Carat
+c1 <- ggplot(diamonds, aes(carat)) 
+c1 <- c1 + geom_histogram(bins = 10, show.legend = FALSE, aes(fill = as.factor(carat))) + labs(title = "Carat") + scale_fill_manual(values = plasma(273)) 
+
+# Cut
+c2 <- ggplot(diamonds) 
+c2 <- c2 + geom_histogram(aes(cut, fill = cut), stat = "count", bins = 5, show.legend = FALSE) + scale_fill_manual(values = plasma(5))+ labs(title = "Cut") + scale_x_discrete(guide = guide_axis(n.dodge=2))
+
+# Clarity
+c3 <- ggplot(diamonds) 
+c3 <- c3 + geom_histogram(aes(clarity, fill = clarity), stat = "count", bins = 8, show.legend = FALSE) + scale_fill_manual(values = plasma(8))  + labs(title = "Clarity") + scale_x_discrete(guide = guide_axis(n.dodge=2))
+
+# Color
+c4 <- ggplot(diamonds) 
+c4 <- c4 + geom_histogram(aes(color, fill = color), stat = "count", show.legend = FALSE, bins = 7) + scale_fill_manual(values = plasma(7))  + labs(title = "Color") + scale_x_discrete(guide = guide_axis(n.dodge=2))
+
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+
+```
+
+### Price vs Carat
+
+## Clarity
+
+```{r}
+#| cache: true
+#| echo: false
+p <- ggplot(diamonds, aes(carat, price)) 
+p + geom_point(alpha = .25 ,aes(color = clarity)) + scale_color_manual(values = viridis(8)) + labs(title = "Scattplot Clarity") + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+```
+
+```{r}
+#| cache: true
+#| echo: false
+d <- ggplot(diamonds, aes(carat, price))
+d + geom_density2d(aes(color = clarity),lwd = .75) + 
+  scale_color_manual(values = viridis(8)) + labs(title = "Density Clarity")
+
+q <- ggplot(diamonds, aes(carat, price))
+q + geom_smooth(aes(color = clarity), level = .99) + 
+  scale_color_manual(values = viridis(8)) + labs(title = "Line Graph Clarity")
+
+
+```
+
+\pagebreak
+
+## Cut
+
+```{r}
+#| cache: true
+#| echo: false
+p <- ggplot(diamonds, aes(carat, price)) 
+p + geom_point(alpha = .25 ,aes(color = cut)) + scale_color_manual(values = mako(6)) + labs(title = "Scattplot Cut") + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+```
+
+```{r}
+#| cache: true
+#| echo: false
+d <- ggplot(diamonds, aes(carat, price))
+d + geom_density2d(aes(color = cut), lwd = .8) + 
+  scale_color_manual(values = mako(6)) + labs(title = "Density Cut")
+```
+
+```{r}
+#| cache: true
+#| echo: false
+q <- ggplot(diamonds, aes(carat, price))
+q + geom_smooth(aes(color = cut), level = .90) + 
+  scale_color_manual(values = mako(6)) + labs(title = "Line Graph Cut")
+```
+
+\pagebreak
+
+## Color
+
+```{r}
+#| cache: true
+#| echo: false
+p <- ggplot(diamonds, aes(carat, price)) 
+p + geom_point(alpha = .3, aes(color = color)) + scale_color_manual(values = viridis(8)) + labs(title = "Scattplot Color") + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+```
+
+```{r}
+#| cache: true
+#| echo: false
+d <- ggplot(diamonds, aes(carat, price))
+d + geom_density2d(aes(color = color), lwd = .8) + 
+  scale_color_manual(values = viridis(8)) + labs(title = "Density Color")
+```
+
+```{r}
+#| cache: true
+#| echo: false
+q <- ggplot(diamonds, aes(carat, price))
+q + geom_smooth(aes(color = color), level = .90) + 
+  scale_color_manual(values = viridis(7)) + labs(title = "Line Graph Color")
+```
