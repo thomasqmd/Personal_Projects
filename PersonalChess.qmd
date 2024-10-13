@@ -1,0 +1,35 @@
+---
+title: "Personal Chess Stats"
+author: "Thomas Reinke"
+format: pdf
+editor: source
+highlight-style: a11y
+geometry: 
+  left = 1in,
+  right = 1in,
+  top = .5in,
+  bottom = .5in
+---
+
+```{r}
+#| echo: false
+#| include: false
+
+library("tidyverse"); library("patchwork"); library("glue")
+library("scales", warn.conflicts = FALSE); library("extrafont")
+library("car")
+library("MASS")
+library(httr)
+library(jsonlite)
+```
+
+```{r}
+res <- GET("https://lichess.org/api/games/user/Trizzole?tags=true&clocks=true&evals=true&opening=true")
+
+```
+
+```{r}
+data <- fromJSON(res$content)
+
+```
+
