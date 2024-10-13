@@ -1,0 +1,278 @@
+---
+title: "Election Stuffs"
+author:
+  - name: Thomas Reinke
+date: "`r Sys.Date()`"
+output: 
+#   prettydoc::html_pretty:
+#     theme: architect
+#     highlight: github
+#     toc: yes
+# editor_options: 
+#   chunk_output_type: console
+  html_document:
+    theme: sandstone
+    highlight: tango
+    toc: true
+    numbered_sections: true
+    toc_float: true
+---
+
+```{r, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(plotly)
+library(lubridate)
+library(scales)
+library(viridis)
+library(quarto)
+```
+
+# 538 
+## Trump & Harris
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+url <- "https://projects.fivethirtyeight.com/polls/president-general/2024/national/polls.json"
+
+# read in the raw json path
+polls_raw <- RcppSimdJson::fload(url)
+
+# filter to the IDs that contain Harris
+has_harris <- polls_raw |> 
+  unnest(answers) |> 
+  filter(choice == "Harris") |> 
+  distinct(id)
+
+# clean up the data and filter to only harris and trump
+polls_clean <- polls_raw |> 
+  semi_join(has_harris) |> 
+  unnest(answers) |> 
+  as_tibble() |> 
+  mutate(
+    across(c(sampleSize, pct), as.numeric),
+    across(c(created_at, ends_with("Date")), anytime::anydate)
+  ) |>
+  filter(choice %in% c("Harris", "Trump")) |> 
+  rename_with(heck::to_snek_case)
+``` 
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+# make a plot
+plot_trumpharris <- polls_clean |>
+  filter(end_date >= "2024-07-20") |>
+  ggplot() +
+  geom_smooth(
+    aes(
+      x = end_date,
+      y = pct,
+      color = choice,
+      fill = choice),
+    se = FALSE,
+    alpha = .2
+    ) +
+  theme_minimal()
+
+ggplotly(plot_trumpharris) |> layout(
+  xaxis = list(
+    rangeslider = list(type = "date")
+  )
+)
+```
+
+## Polling groups & sample sizes
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+polls_post_biden <- polls_clean |>
+  filter(end_date >= "2024-07-20")
+
+#colnames(polls_post_biden)
+
+# polls_post_biden |>
+#   select(pollster) |>
+#   count(by = pollster) 
+  
+polls_post_biden |>
+  group_by(Poll = pollster) |>
+  summarise(
+    n = n(),
+    avg_samp = median(sample_size, na.rm = TRUE)
+  ) |> 
+  arrange(desc(avg_samp))
+  
+```
+
+## All candidates >5%
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+polls_clean2 <- polls_raw |> 
+  unnest(answers) |> 
+  as_tibble() |> 
+  mutate(
+    across(c(sampleSize, pct), as.numeric),
+    across(c(created_at, ends_with("Date")), anytime::anydate)
+  ) |>
+  filter(cycle == 2024) |>
+  rename_with(heck::to_snek_case)
+
+# polls_clean2 |> colnames()
+
+plot_allcand <- polls_clean2 |>
+  filter(pct >= 5, start_date >= "2024-06-01") |>
+  ggplot() +
+  geom_smooth(
+    aes(
+      x = end_date,
+      y = pct,
+      color = choice,
+      fill = choice),
+    se = FALSE,
+    alpha = .2
+    ) +
+  theme_minimal()
+
+ggplotly(plot_allcand) |> layout(
+  xaxis = list(
+    rangeslider = list(type = "date")
+  )
+)
+```
+## Party comparison
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+plot_parties <- polls_clean2 |>
+  ggplot() +
+  geom_smooth(
+    aes(
+      x = end_date,
+      y = pct,
+      color = party,
+      fill = party),
+    se = FALSE,
+    alpha = .2
+    ) +
+  theme_minimal()
+
+ggplotly(plot_parties) |> layout(
+  xaxis = list(
+    rangeslider = list(type = "date")
+  )
+)
+```
+
+# Nate Silver
+
+## All candidates
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+url <- "https://static.dwcdn.net/data/wB0Zh.csv"
+
+nspolls <- read.csv(url)
+
+plot_ns_allcand <- nspolls |>
+  pivot_longer(
+    cols = !c(state, modeldate),
+    names_to = "poll",
+    values_to = "pct"
+  ) |>
+  mutate(
+    modeldate = mdy(modeldate)
+  ) |>
+  na.omit() |>
+  ggplot(aes(x = modeldate, y = pct, color = poll, fill = poll)) + 
+  geom_smooth(se = FALSE) + 
+  scale_color_manual(values = c("blue", "lightblue", "forestgreen", "lightgreen", "red", "salmon")) +
+  scale_fill_manual(values = c("blue", "lightblue", "forestgreen", "lightgreen", "red", "salmon")) + 
+  theme_minimal()
+  
+
+ggplotly(plot_ns_allcand) |> layout(
+  xaxis = list(
+    rangeslider = list(type = "date")
+  )
+)
+```
+
+## Harris & Trump
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+plot_ns_TH <- nspolls |>
+  pivot_longer(
+    cols = !c(state, modeldate),
+    names_to = "poll",
+    values_to = "pct"
+  ) |>
+  mutate(
+    modeldate = mdy(modeldate)
+  ) |>
+  filter(poll != "rfk") |>
+  na.omit() |>
+  ggplot(aes(x = modeldate, y = pct, color = poll, fill = poll)) + 
+  geom_smooth(se = FALSE) + 
+  scale_color_manual(values = c("blue", "lightblue", "red", "salmon"))+
+  scale_fill_manual(values = c("blue", "lightblue",  "red", "salmon")) + 
+  theme_minimal()
+  
+ggplotly(plot_ns_TH) |> layout(
+  xaxis = list(
+    rangeslider = list(type = "date")
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+nspolls |>
+  pivot_longer(
+    cols = !c(state, modeldate),
+    names_to = "poll",
+    values_to = "pct"
+  ) |>
+  mutate(
+    modeldate = mdy(modeldate)
+  ) |>
+  filter(poll != "rfk") |>
+  na.omit() |>
+  arrange(desc(modeldate)) |>
+  filter(modeldate == max(modeldate))
+```
+
+```{r}
+#| include: false
+nspolls |>
+  pivot_longer(
+    cols = !c(state, modeldate),
+    names_to = "poll",
+    values_to = "pct"
+  ) |>
+  mutate(
+    modeldate = mdy(modeldate)
+  ) |>
+  arrange(desc(modeldate))
+
+```
