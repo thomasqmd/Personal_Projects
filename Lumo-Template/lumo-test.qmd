@@ -1,0 +1,249 @@
+---
+title: "A Test Report for the Lumo Template"
+subtitle: "Subtitle with  <a href='https://google.com/'>hyperlink</a>"
+format:
+  lumo-html: 
+    logo: "dalle-logo.webp"                             # Optional. Path to a logo displayed above the title
+    github-repo: "https://www.github.com/Trizzole"        # Optional. Adds a github corner at the top right
+    primary-color: "#a31f37"
+    self-contained: true
+    is-particlejs-enabled: true                  # Optional: display interactive particles in the document header
+author: Thomas Reinke
+date: last-modified
+---
+
+
+## Introduction
+
+First paragraph
+
+Second paragraph with **bold text**. Also an example [hyperlink](https://www.github.com/Trizzole) plus example`code block`.
+
+
+::: {.column-margin}
+
+Column margin with : [hyperlink](https://www.github.com/Trizzole)
+
+:::
+
+
+Third paragraph
+
+
+## Load Packages
+
+Section to load packages. Code is foled by default. You can adjust this behavior with the `code-fold` option in the document's YAML header.
+
+
+```{r, warning=F, message=F}
+library(tidyverse) 
+library(hrbrthemes) # <1>
+library(viridis) # <2>
+library(ggiraph)
+library(patchwork) 
+library(sf)
+theme_set(theme_minimal())
+```
+
+1. this package provides my favorite `ggplot2` theme: `theme_ipsum()`
+
+:::{.callout}
+Example callout
+:::
+
+
+## Main Features
+
+### ggiraph example
+
+```{r, fig.cap="Figure: three graphs connected thanks to `ggiraph`"}
+
+# Read the full world map
+world_sf <- read_sf("https://raw.githubusercontent.com/holtzy/R-graph-gallery/master/DATA/world.geojson")
+world_sf <- world_sf %>%
+  filter(!name %in% c("Antarctica", "Greenland"))
+
+# Create a sample dataset
+happiness_data <- data.frame(
+  Country = c(
+    "France", "Germany", "United Kingdom",
+    "Japan", "China", "Vietnam",
+    "United States of America", "Canada", "Mexico"
+  ),
+  Continent = c(
+    "Europe", "Europe", "Europe",
+    "Asia", "Asia", "Asia",
+    "North America", "North America", "North America"
+  ),
+  Happiness_Score = rnorm(mean = 30, sd = 20, n = 9),
+  GDP_per_capita = rnorm(mean = 30, sd = 20, n = 9),
+  Social_support = rnorm(mean = 30, sd = 20, n = 9),
+  Healthy_life_expectancy = rnorm(mean = 30, sd = 20, n = 9)
+)
+
+# Join the happiness data with the full world map
+world_sf <- world_sf %>%
+  left_join(happiness_data, by = c("name" = "Country"))
+
+
+# Create the first chart (Scatter plot)
+p1 <- ggplot(world_sf, aes(
+  GDP_per_capita,
+  Happiness_Score,
+  tooltip = name,
+  data_id = Continent,
+  color = Continent
+)) +
+  geom_point_interactive(data = filter(world_sf, !is.na(Happiness_Score)), size = 4) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "none"
+  )
+
+# Create the second chart (Bar plot)
+p2 <- ggplot(world_sf, aes(
+  x = reorder(name, Happiness_Score),
+  y = Happiness_Score,
+  tooltip = name,
+  data_id = Continent,
+  fill = Continent
+)) +
+  geom_col_interactive(data = filter(world_sf, !is.na(Happiness_Score))) +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "none"
+  )
+
+# Create the third chart (choropleth)
+p3 <- ggplot() +
+  geom_sf(data = world_sf, fill = "lightgrey", color = "lightgrey") +
+  geom_sf_interactive(
+    data = filter(world_sf, !is.na(Happiness_Score)),
+    aes(fill = Continent, tooltip = name, data_id = Continent)
+  ) +
+  coord_sf(crs = st_crs(3857)) +
+  theme_void() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "none"
+  )
+
+# Combine the plots
+combined_plot <- (p1 + p2) / p3 + plot_layout(heights = c(1, 2))
+
+# Create the interactive plot
+interactive_plot <- girafe(ggobj = combined_plot)
+interactive_plot <- girafe_options(
+  interactive_plot,
+  opts_hover(css = "fill:red;stroke:black;")
+)
+
+interactive_plot
+```
+
+
+## Interactive table example
+
+```{r}
+library(DT)
+data(iris)
+
+# Make a table
+datatable(iris, filter = "top")
+```
+
+::: {.column-margin}
+<br/><br/><br/><br/><br/><br/>
+CSS used to make text smaller in table
+:::
+
+
+
+## A grey section
+
+::: {.cell .page-columns .page-full .column-screen .grey-section}
+
+Example gray section with LaTeX
+
+$$
+X \sim N(\mu, \sigma^2)
+$$
+:::
+
+
+
+## Quarto Tricks
+
+<hr/>
+
+Pill example, if you're creating multiple plots, each highlighting different aspects of your dataset, consider using *pills* to organize them!
+
+
+::: {.panel-tabset .nav-pills}
+
+## Scatterplot
+
+This is a good old scatter plot of the iris data set.
+
+
+```{r, fig.align='center'}
+ggplot(iris, aes(x=Sepal.Length, y=Sepal.Width, color=Species)) + 
+    geom_point()
+```
+
+## Boxplot
+
+You can also make a box plot. 
+
+```{r, fig.align='center'}
+#| warning: false
+#| message: false
+# create a dataset
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+# Plot
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=14)
+    ) +
+    ggtitle("A boxplot that hides the underlying distribution") +
+    xlab("")
+```
+
+## Jittering
+
+Jittering example
+
+```{r, fig.align='center'}
+data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+```
+
+
+:::
+
+</div></div>
+
+
