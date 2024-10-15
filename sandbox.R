@@ -1,6 +1,7 @@
 #install.packages("ggquiver")
 library(ggquiver)
 library(tidyverse)
+theme_set(theme_minimal())
 
 
 # Quiver plots of mathematical functions
@@ -11,13 +12,21 @@ field |>
     u = cos(x),
     v = sin(y)
   ) |>
-ggplot(aes(x=x,y=y,u=u,v=v, color = u * v)) +
-  geom_quiver()
+ggplot(aes(x=x,y=y,u=u,v=v, color = factor(u * v))) +
+  geom_quiver(show.legend = FALSE)
 
 # Removing automatic scaling
-ggplot(seals, aes(x=long, y=lat, u=delta_long, v=delta_lat)) +
-  geom_quiver(vecsize=NULL) + 
-  borders("state")
+ggplot(seals, aes(
+  x = long,
+  y = lat,
+  u = delta_long,
+  v = delta_lat
+)) +
+  geom_quiver(aes(color = delta_long + delta_lat),
+              show.legend = FALSE,
+              rescale = TRUE) +
+  borders("state") +
+  theme_void() 
 
 
 field2 <- expand.grid(x = seq(-10,10), y = seq(-10,10))
@@ -28,7 +37,7 @@ field2 |>
     v = x
   ) |>
   ggplot(aes(x=x,y=y,u=u,v=v, color = sqrt(u^2 + v^2))) +
-  geom_quiver()
+  geom_quiver(show.legend = FALSE, rescale = TRUE)
   
 
 
@@ -51,11 +60,8 @@ uniroot(func, c(0,2))$root
 conf <- .95
 al <- 1 - conf
 
-df <- df |> 
-  mutate(
-    order_stat_lower_bound = NA_real_,
-    order_stat_upper_bound = NA_real_
-  )
+df <-  tibble(order_stat_lower_bound = NA_real_,
+              order_stat_upper_bound = NA_real_)
 
 for (i in 1:n) {
   qorderstat <- jth_order_stat_qf(cdf, i, n)
