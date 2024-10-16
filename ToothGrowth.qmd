@@ -2,6 +2,8 @@
 title: "Tooth Growth"
 author: "Thomas Reinke"
 format: html
+theme: flatly
+code-fold: show
 highlight-style: a11y
 editor: source
 ---
@@ -30,7 +32,7 @@ c("lm", "glm", "gam", "loess") |>
     ggplot(data = ToothGrowth, mapping = aes(x = len, y = dose, color = supp)) + 
       geom_point(position = "jitter") +
       geom_smooth(se = FALSE, method = method) + 
-      ggtitle(main = method) + 
+      labs(title = method) + 
       facet_wrap(~ supp, ncol = 1, scales = "fixed") + 
       scale_color_brewer(type = "qual", palette = "Dark2")
       }
