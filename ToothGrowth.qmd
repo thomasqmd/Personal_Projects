@@ -30,7 +30,7 @@ c("lm", "glm", "gam", "loess") |>
     ggplot(data = ToothGrowth, mapping = aes(x = len, y = dose, color = supp)) + 
       geom_point(position = "jitter") +
       geom_smooth(se = FALSE, method = method) + 
-      ggtitle(title = method)
+      ggtitle(main = method) + 
       facet_wrap(~ supp, ncol = 1, scales = "fixed") + 
       scale_color_brewer(type = "qual", palette = "Dark2")
       }
