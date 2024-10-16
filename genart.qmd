@@ -13,6 +13,8 @@ code-fold: true
 #| include: false
 library(tidyverse)
 library(RColorBrewer)
+library(sf)
+library(gganimate)
 knitr::opts_chunk$set(warning = FALSE, results = "hide")
 theme_void2 <- \() {
   theme_void() %+replace% theme(
@@ -88,6 +90,7 @@ draw()
 ## [aRt package](https://github.com/nrennie/aRt)
 
 ```{r}
+#| cache: true
 aRt::crawling()
 aRt::crosshatch()
 aRt::fading()
@@ -207,4 +210,141 @@ expand.grid(x = seq(-1, 1, length.out = n),
   scale_fill_viridis_d(option = "turbo") + 
   theme_void()
 
+```
+
+# Using sf & gganimate
+
+Inspiration from this [example](https://alistaire.rbind.io/blog/fireworks/)
+
+## sf
+
+```{r}
+theme_set(hrbrthemes::theme_ipsum_ps())
+grid_plot <- expand.grid(
+  lon = seq(-180, 180, 10),
+  lat = seq(-90, 90, 10)
+) |>
+  pmap(~st_point(c(...))) |>
+  st_sfc(crs = 4326) |>
+  st_sf() |>
+  ggplot() + 
+  geom_sf()
+
+grid_plot
+```
+
+```{r}
+grid_plot + coord_sf(crs = "+proj=laea +lat_0=-90 +ellps=WGS84 +no_defs")
+```
+
+## gganimate
+
+```{r animate1-1}
+#| message: false
+#| cache: true
+theme_set(theme_void() + theme(panel.background = element_rect(fill = "black")))
+
+
+p <-  crossing(x = 1:30, nesting(t = 1:10, y = .5 ^ (seq(t)))) |> print(n = 300) |>
+  ggplot(aes(x, y)) +
+  geom_point(color = "white") +
+  coord_polar() +
+  transition_time(t) +
+  shadow_wake(.5)
+```
+
+```{r animate1-2}
+animate(p, nframes = 250, fps = 50, rewind = TRUE)
+```
+
+```{r animate2}
+#| message: false
+#| cache: true
+
+(map_dfr(1:10, ~ crossing(x = 1:30, nesting(
+  y = seq(1, .x, length.out = 10) ^ .5, t = 1:10
+))) |>
+  ggplot(aes(x,y)) + 
+  geom_point(color = "White") + 
+  coord_polar() + 
+  transition_time(t) + 
+  shadow_wake(.3)) |>
+  animate(nframes = 100, fps = 50)
+```
+
+```{r animate3}
+#| message: false
+#| cache: true
+
+p <-
+  map_dfr(1:10, ~ tibble(y = seq(1, .x, length.out = 10), t = 1:10)) %>%
+  mutate(x = runif(n())) %>%
+  ggplot(aes(x, y)) +
+  geom_point(color = 'white') +
+  coord_polar() +
+  transition_time(t) +
+  shadow_wake(0.5)
+
+animate(p, nframes = 300, fps = 50)
+
+animate(p, nframes = 50, fps = 50)
+```
+
+```{r explosion}
+#| message: false
+#| cache: true
+
+(
+  map_dfr(1:10, ~ crossing(x = runif(30), nesting(
+    y = seq(1, .x, length.out = 10) ^ .5, t = 1:10
+  ))) |>
+    ggplot(aes(x, y)) +
+    geom_point(color = "white") +
+    coord_polar() +
+    transition_time(t) +
+    shadow_wake(.5)
+) |>
+  animate(nframes = 100, fps = 50)
+```
+
+```{r spiral}
+#| message: false
+#| cache: true
+
+(
+  map_dfr(1:10, ~ crossing(x = {
+    x = seq(30) + 0.3 * .x
+    
+    ifelse(x > 30, x - 30, x)
+  }, nesting(
+    y = seq(1, .x, length.out = 10) ^ 0.5, t = 1:10
+  ))) |>
+    ggplot(aes(x, y)) +
+    geom_point(color = "white") +
+    coord_polar() +
+    transition_time(t) +
+    shadow_wake(.3)
+) |>
+  animate(nframes = 100, fps = 50)
+```
+
+```{r firework}
+#| message: false
+#| cache: true
+
+(
+  map_dfr(1:10, ~ crossing(x = {
+    x = seq(30) + 0.6 * .x
+    
+    ifelse(x > 30, x - 30, x)
+  }, nesting(
+    y = seq(1, .x, length.out = 10) ^ 0.5, t = 1:10
+  ))) %>%
+    ggplot(aes(x, y)) +
+    geom_point(color = 'white') +
+    coord_polar() +
+    transition_time(t) +
+    shadow_wake(0.3)
+) |>
+  animate(nframes = 100, fps = 50)
 ```
