@@ -2,9 +2,8 @@
 title: "Tooth Growth"
 author: "Thomas Reinke"
 format: html
+highlight-style: a11y
 editor: source
-editor_options: 
-  chunk_output_type: inline
 ---
 
 ```{r, include = FALSE}
@@ -18,12 +17,8 @@ knitr::opts_chunk$set(
   message = FALSE,
   warning = FALSE
 )
-library(viridis)
 library(scales)
 library(tidyverse)
-library(esc)
-library(plotrix)
-library(gridExtra)
 theme_set(theme_minimal())
 theme_update(panel.grid.minor = element_blank())
 theme_update(plot.title = element_text(hjust = 0.5))
@@ -31,14 +26,14 @@ theme_update(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
-#| include: false
-str(ToothGrowth)
-```
-
-```{r}
-ggplot(data = ToothGrowth, mapping = aes(x = len, y = dose, color = supp)) + 
-  geom_point(position = "jitter") +
-  geom_smooth() + 
-  facet_grid(~ supp) + 
-  scale_color_manual(values = viridis(4))
+c("lm", "glm", "gam", "loess") |>
+  map(.x = _, .f = \(method){
+    ggplot(data = ToothGrowth, mapping = aes(x = len, y = dose, color = supp)) + 
+      geom_point(position = "jitter") +
+      geom_smooth(se = FALSE, method = method) + 
+      ggtitle(title = method)
+      facet_wrap(~ supp, ncol = 1, scales = "fixed") + 
+      scale_color_brewer(type = "qual", palette = "Dark2")
+      }
+    )
 ```
