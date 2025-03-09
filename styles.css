@@ -1,0 +1,29 @@
+.nav-pills .nav-link {
+  color: var(--primary-color);
+  background-color: white;
+  border-color: var(--primary-color);
+  border-radius: 4px;
+}
+.nav-pills .nav-link.active {
+  color: white;
+  background-color: var(--primary-color);
+}
+.nav-pills .nav-link {
+  padding: 5px;
+  margin-right: 4px;
+}
+ul.nav.nav-tabs {
+  margin: 0px;
+  border: none;
+}
+.tab-content {
+  border: none;
+  margin-top: 10px;
+  padding: 0px;
+}
+
+table.dataTable tbody th,
+table.dataTable tbody td {
+  padding: 0px 0px;
+  font-size: 10px;
+}

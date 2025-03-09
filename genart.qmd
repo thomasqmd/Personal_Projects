@@ -199,6 +199,7 @@ aRt::split_grid()
 ```{r profile-pic}
 #| warning: false
 #| fig-asp: 1
+#| cache: true
 n = 1001
 
 expand.grid(x = seq(-1, 1, length.out = n),
@@ -254,7 +255,9 @@ p <-  crossing(x = 1:30, nesting(t = 1:10, y = .5 ^ (seq(t)))) |> print(n = 300)
 ```
 
 ```{r animate1-2}
-animate(p, nframes = 250, fps = 50, rewind = TRUE)
+#| message: false
+#| cache: true
+animate(p, nframes = 150, fps = 50, rewind = TRUE, renderer=gifski_renderer())
 ```
 
 ```{r animate2}
