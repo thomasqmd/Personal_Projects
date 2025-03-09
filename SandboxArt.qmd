@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = FALSE, comment = "", collapse = TRUE, warning = FAL
 library(tidyverse)
 theme_set(theme_void())
 library(RColorBrewer)
+library(ggforce)
 ```
 
 # Artbox
@@ -33,19 +34,80 @@ draw <- \(n){
 }
 
 draw(28)
-
-boundary <- tibble(
-  x = c(0,1,1,0,0),
-  y = c(0,0,1,1,0)
-)
-
-interiorx <- 3
-interiory <- 2
-
-# expand_grid(x = c(0, 1, runif(interiorx)), y = c(0, 1, runif(interiory))) |>
-# ggplot(aes(x, y)) + 
-#   geom_point() + 
-#   geom_path() + 
-#   coord_equal()
-
 ```
+
+```{r}
+interiorx <- 2
+interiory <- 2
+boxes <- (1 + interiorx) * (1 + interiory)
+
+grid <- expand_grid(x = c(0, runif(interiorx), 1), y = c(0, runif(interiory), 1)) |>
+  mutate(
+    raw_count = (x %in% c(0, 1)) + (y %in% c(0, 1)), # Count boundary points
+    category = case_when(
+      raw_count == 2 ~ "corner",
+      raw_count == 1 ~ "edge",
+      raw_count == 0 ~ "interior"
+    ),
+    count = case_when(
+      category == "corner" ~ 1,
+      category == "edge" ~ 2,
+      category == "interior" ~ 4
+    )
+  ) |>
+  uncount(count) |>
+  select(x, y) |>
+  arrange(y, x)
+```
+
+```{r}
+n <- 4
+grid <- expand_grid(x = c(0, runif(interiorx), 1), y = c(0, runif(interiory), 1)) |>
+  arrange(y, x)
+
+dfResultGrid <- as.data.frame(grid)
+names(dfResultGrid) <- c("x", "y")
+
+# Get coordinates for bottom and left points as segment start
+pt_base <- head(dfResultGrid, n)
+pt_left <- dfResultGrid[c(TRUE, rep(FALSE, n-1)), ]
+# Get coordinates for top and right points as segment end
+pt_top <- tail(dfResultGrid, n)
+names(pt_top) <- c("xend", "yend")
+pt_right <- dfResultGrid[c(rep(FALSE, n-1), TRUE), ]
+names(pt_right) <- c("xend", "yend")
+# cbind xend/yend to x/y, and rbind vertical to horizontal segment coordinates
+df_seg <- rbind(cbind(pt_base, pt_top), cbind(pt_right, pt_left))
+
+ggplot(dfResultGrid, aes(x, y)) +
+  geom_point() +
+  geom_segment(data = df_seg, aes(x, y, xend = xend, yend = yend)) + 
+  coord_equal()
+```
+
+```{r}
+# you have used "expand grid" on a pattern of nxn
+# n <- 4
+# your coordinate creation, slightly modified (using "n")
+# BaseMatrix <- matrix(c(2, 1, 1.5, 2), nrow = 2)
+# pointMat <- t(expand.grid(x = 1:n, y = 1:n))
+# ResultMat <- pointMat
+# dfResultGrid <- as.data.frame(t(ResultMat))
+# names(dfResultGrid) <- c("x", "y")
+
+# Get coordinates for bottom and left points as segment start
+# pt_base <- head(dfResultGrid, n)
+# pt_left <- dfResultGrid[c(TRUE, rep(FALSE, n - 1)), ]
+# Get coordinates for top and right points as segment end
+# pt_top <- tail(dfResultGrid, n)
+# names(pt_top) <- c("xend", "yend")
+# pt_right <- dfResultGrid[c(rep(FALSE, n - 1), TRUE), ]
+# names(pt_right) <- c("xend", "yend")
+# cbind xend/yend to x/y, and rbind vertical to horizontal segment coordinates
+# df_seg <- rbind(cbind(pt_base, pt_top), cbind(pt_right, pt_left))
+
+# ggplot(dfResultGrid, aes(x, y)) +
+  # geom_point() +
+  # geom_segment(data = df_seg, aes(x, y, xend = xend, yend = yend))
+```
+
