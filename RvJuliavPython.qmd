@@ -1,0 +1,154 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{python}
+# Python - Fair comparison
+import time
+import threading
+import numpy as np
+
+def sum_of_squares_sequential(arr):
+    total = 0.0
+    for i in arr:
+        total += i * i
+    return total
+
+def sum_of_squares_parallel(arr):
+    def compute_chunk(start_idx, end_idx):
+        return sum(arr[i] * arr[i] for i in range(start_idx, end_idx))
+    
+    n_threads = min(4, len(arr) // 10000)
+    if n_threads <= 1:
+        return sum_of_squares_sequential(arr)
+    
+    chunk_size = len(arr) // n_threads
+    threads = []
+    results = [0.0] * n_threads
+    
+    def thread_worker(thread_id):
+        start_idx = thread_id * chunk_size
+        end_idx = start_idx + chunk_size if thread_id < n_threads - 1 else len(arr)
+        results[thread_id] = compute_chunk(start_idx, end_idx)
+    
+    for i in range(n_threads):
+        t = threading.Thread(target=thread_worker, args=(i,))
+        threads.append(t)
+        t.start()
+    
+    for t in threads:
+        t.join()
+    
+    return sum(results)
+
+# Same data size as R and Julia
+data = np.random.rand(1000000).tolist()
+
+# Benchmark multiple times for consistency
+times = []
+for _ in range(10):
+    start = time.time()
+    result = sum_of_squares_sequential(data)
+    times.append(time.time() - start)
+
+seq_time = np.mean(times)
+print(f"Python Sequential: {seq_time:.6f} seconds")
+
+times = []
+for _ in range(10):
+    start = time.time()
+    result = sum_of_squares_parallel(data)
+    times.append(time.time() - start)
+
+par_time = np.mean(times)
+print(f"Python Parallel: {par_time:.6f} seconds")
+print(f"Speedup: {seq_time/par_time:.2f}x")
+
+
+```
+
+```{julia}
+# Julia - Fair comparison
+using BenchmarkTools
+using Base.Threads
+
+function sum_of_squares_sequential(arr)
+    total = 0.0
+    for i in arr
+        total += i * i
+    end
+    return total
+end
+
+function sum_of_squares_parallel(arr)
+    total = 0.0
+    @threads for i in arr
+        total += i * i
+    end
+    return total
+end
+
+# Same data size as Python and R
+data = rand(1000000)
+
+# Benchmark with same number of runs
+println("Julia Sequential:")
+seq_result = @benchmark sum_of_squares_sequential($data) samples=10
+
+println("Julia Parallel:")
+par_result = @benchmark sum_of_squares_parallel($data) samples=10
+
+println("Sequential time: $(minimum(seq_result.times)/1e6) ms")
+println("Parallel time: $(minimum(par_result.times)/1e6) ms")
+
+```
+
+```{r}
+# R - Fair comparison
+library(microbenchmark)
+library(parallel)
+
+sum_of_squares_sequential <- function(arr) {
+  total <- 0.0
+  for (i in arr) {
+    total <- total + i * i
+  }
+  return(total)
+}
+
+sum_of_squares_parallel <- function(arr) {
+  n_cores <- detectCores() - 1
+  chunk_size <- length(arr) %/% n_cores
+  
+  chunks <- split(arr, rep(1:n_cores, each = chunk_size, length.out = length(arr)))
+  
+  results <- mclapply(chunks, function(chunk) sum(chunk^2), mc.cores = n_cores)
+  
+  return(sum(unlist(results)))
+}
+
+# Same data size as Python and Julia
+data <- runif(1000000)
+
+# Benchmark with same number of runs
+seq_result <- microbenchmark(
+  sum_of_squares_sequential(data),
+  times = 10
+)
+
+par_result <- microbenchmark(
+  sum_of_squares_parallel(data),
+  times = 10
+)
+
+# Print average times
+seq_avg <- mean(seq_result$time) / 1e6  # Convert to milliseconds
+par_avg <- mean(par_result$time) / 1e6
+
+print(paste("R Sequential:", round(seq_avg, 4), "ms"))
+print(paste("R Parallel:", round(par_avg, 4), "ms"))
+print(paste("Speedup:", round(seq_avg/par_avg, 2), "x"))
+
+
+```
