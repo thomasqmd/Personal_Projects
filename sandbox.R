@@ -1,18 +1,18 @@
-#install.packages("ggquiver")
+# install.packages("ggquiver")
 library(ggquiver)
 library(tidyverse)
 theme_set(theme_minimal())
 
 
 # Quiver plots of mathematical functions
-field <- expand.grid(x=seq(0,pi,pi/12), y=seq(0,pi,pi/12))
+field <- expand.grid(x = seq(0, pi, pi / 12), y = seq(0, pi, pi / 12))
 
 field |>
   mutate(
     u = cos(x),
     v = sin(y)
   ) |>
-ggplot(aes(x=x,y=y,u=u,v=v, color = factor(u * v))) +
+  ggplot(aes(x = x, y = y, u = u, v = v, color = factor(u * v))) +
   geom_quiver(show.legend = FALSE)
 
 # Removing automatic scaling
@@ -23,57 +23,61 @@ ggplot(seals, aes(
   v = delta_lat
 )) +
   geom_quiver(aes(color = delta_long + delta_lat),
-              show.legend = FALSE,
-              rescale = TRUE) +
+    show.legend = FALSE,
+    rescale = TRUE
+  ) +
   borders("state") +
-  theme_void() 
+  theme_void()
 
 
-field2 <- expand.grid(x = seq(-10,10), y = seq(-10,10))
+field2 <- expand.grid(x = seq(-10, 10), y = seq(-10, 10))
 
 field2 |>
   mutate(
     u = -y,
     v = x
   ) |>
-  ggplot(aes(x=x,y=y,u=u,v=v, color = sqrt(u^2 + v^2))) +
+  ggplot(aes(x = x, y = y, u = u, v = v, color = sqrt(u^2 + v^2))) +
   geom_quiver(show.legend = FALSE, rescale = TRUE)
-  
+
 
 
 ################
 
 
 func <- \(r){
-  (r * sqrt(1 - (r/2)^2)) + ((2 - r^2) * acos(r/2)) - (pi/2)
+  (r * sqrt(1 - (r / 2)^2)) + ((2 - r^2) * acos(r / 2)) - (pi / 2)
 }
 
-seq(0, 2, by = .001) |> tibble(x = _) |>
+seq(0, 2, by = .001) |>
+  tibble(x = _) |>
   mutate(
     y = func(x)
   ) |>
-  ggplot() + 
+  ggplot() +
   geom_line(aes(x = x, y = y))
 
-uniroot(func, c(0,2))$root
+uniroot(func, c(0, 2))$root
 
 conf <- .95
 al <- 1 - conf
 
-df <-  tibble(order_stat_lower_bound = NA_real_,
-              order_stat_upper_bound = NA_real_)
+df <- tibble(
+  order_stat_lower_bound = NA_real_,
+  order_stat_upper_bound = NA_real_
+)
 
 for (i in 1:n) {
   qorderstat <- jth_order_stat_qf(cdf, i, n)
-  df[i,5:6] <- qorderstat(c(al/2, 1 - al/2)) |> t()
-} 
+  df[i, 5:6] <- qorderstat(c(al / 2, 1 - al / 2)) |> t()
+}
 
 ggplot(df, aes(theoretical_quantiles, order_stats)) +
   geom_errorbar(
-    aes(ymin = order_stat_lower_bound, ymax = order_stat_upper_bound), 
+    aes(ymin = order_stat_lower_bound, ymax = order_stat_upper_bound),
     color = "gray40", alpha = .30
   ) +
-  geom_function(fun = ~ .x, color = "red", linetype = "dashed") +
+  geom_function(fun = ~.x, color = "red", linetype = "dashed") +
   # geom_point(size = 1.5) +
   geom_point(aes(fill = ps_of_order_stats), size = 1.5, shape = 21) +
   scale_fill_gradientn(
@@ -81,7 +85,7 @@ ggplot(df, aes(theoretical_quantiles, order_stats)) +
   ) +
   coord_equal() +
   labs(
-    x = "Theoretical quantiles of N(0,1)", 
+    x = "Theoretical quantiles of N(0,1)",
     y = "Observed quantiles = order statistics",
     fill = "p"
   ) +
